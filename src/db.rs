@@ -1,7 +1,7 @@
 use mongodb::{
-    bson::{Document, doc, self, document::ValueAccessError},
+    bson::{Document, doc, self},
     error::Error,
-    options::{ClientOptions, FindOptions, FindOneOptions},
+    options::{ClientOptions, FindOptions, FindOneOptions, UpdateOptions},
     Client,
 };
 use futures::TryStreamExt;
@@ -41,12 +41,27 @@ impl Database {
         Ok(documents)
     }
 
-    pub async fn find_by_id(&self, collection: &mongodb::Collection<Document>, id: String) 
+    pub async fn find_by_id(&self, collection: &mongodb::Collection<Document>, id: bson::oid::ObjectId) 
     -> Result<Option<bson::Document>, Error> {
         let query = doc! {
-            "id": id
+            "_id": id
         };
         let options = FindOneOptions::builder().build();
         collection.find_one(query, options).await
+    }
+
+    pub async fn update_document(
+        &self, 
+        collection: &mongodb::Collection<Document>, 
+        id: bson::oid::ObjectId,
+        update: Document
+    ) -> mongodb::error::Result<()> {
+        let filter = doc! { "_id": id };
+        let options = UpdateOptions::builder()
+            .upsert(false)
+            .build();
+
+        collection.update_one(filter, update, options).await?;
+        Ok(())
     }
 }
