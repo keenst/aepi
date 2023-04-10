@@ -109,34 +109,7 @@ async fn get_user(deps: Dependencies, id: String) -> Result<impl Reply, Rejectio
     match result {
         Ok(value) => {
             match value {
-                Some(reply) => {
-                    let id: ObjectId;
-                    let username: &str;
-                    let password: &str;
-
-                    match reply.get_object_id("_id") {
-                        Ok(value) => id = value,
-                        Err(error) => return Ok(warp::reply::json(&error.to_string()))
-                    }
-
-                    match reply.get_str("username") {
-                        Ok(value) => username = value,
-                        Err(error) => return Ok(warp::reply::json(&error.to_string()))
-                    }
-
-                    match reply.get_str("password") {
-                        Ok(value) => password = value,
-                        Err(error) => return Ok(warp::reply::json(&error.to_string()))
-                    }
-
-                    let document = doc! {
-                        "username": username,
-                        "password": password,
-                        "_id": id
-                    };
-
-                    return Ok(warp::reply::json(&document));
-                }
+                Some(reply) => return Ok(warp::reply::json(&reply)),
                 None => return Ok(warp::reply::json(&"404 not found".to_string()))
             }
         }
@@ -185,34 +158,7 @@ async fn get_note(deps: Dependencies, id: String) -> Result<impl Reply, Rejectio
     match result {
         Ok(value) => {
             match value {
-                Some(reply) => {
-                    let content: &bson::Document;
-                    let owner_id: &str;
-                    let id: &str;
-
-                    match reply.get_document("content") {
-                        Ok(value) => content = value,
-                        Err(error) => return Ok(warp::reply::json(&error.to_string()))
-                    }
-
-                    match reply.get_str("owner_id") {
-                        Ok(value) => owner_id = value,
-                        Err(error) => return Ok(warp::reply::json(&error.to_string()))
-                    }
-
-                    match reply.get_str("id") {
-                        Ok(value) => id = value,
-                        Err(error) => return Ok(warp::reply::json(&error.to_string()))
-                    }
-
-                    let document = doc! {
-                        "content": content,
-                        "owner_id": owner_id,
-                        "_id": id
-                    };
-
-                    return Ok(warp::reply::json(&document));
-                }
+                Some(reply) => return Ok(warp::reply::json(&reply)),
                 None => return Ok(warp::reply::json(&"404 not found".to_string()))
             }
         }
