@@ -88,8 +88,7 @@ async fn get_user(database: db::Database, collection: Collection<bson::Document>
                     let username: &str;
                     let password: &str;
 
-                    let id_result = reply.get_str("id");
-                    match id_result {
+                    match reply.get_str("id") {
                         Ok(value) => {
                             id = value;
                         }
@@ -99,8 +98,7 @@ async fn get_user(database: db::Database, collection: Collection<bson::Document>
                         }
                     }
 
-                    let username_result = reply.get_str("username");
-                    match username_result {
+                    match reply.get_str("username") {
                         Ok(value) => {
                             username = value;
                         }
@@ -110,8 +108,7 @@ async fn get_user(database: db::Database, collection: Collection<bson::Document>
                         }
                     }
 
-                    let password_result = reply.get_str("password");
-                    match password_result {
+                    match reply.get_str("password") {
                         Ok(value) => {
                             password = value;
                         }
