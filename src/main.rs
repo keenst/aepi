@@ -81,6 +81,7 @@ fn setup_user_routes(deps: Dependencies) -> impl Filter<Extract = impl warp::Rep
         .and(users_route)
         .and(with_deps(deps.clone()))
         .and(warp::path::param::<String>())
+        .and(warp::path::end())
         .and_then(get_user);
 
     let patch_user_route = warp::patch()
@@ -90,7 +91,14 @@ fn setup_user_routes(deps: Dependencies) -> impl Filter<Extract = impl warp::Rep
         .and(warp::body::json())
         .and_then(update_user);
 
-    create_user_route.or(get_user_route).or(patch_user_route)
+    let get_user_notes_route = warp::get()
+        .and(users_route.clone())
+        .and(with_deps(deps.clone()))
+        .and(warp::path::param::<String>())
+        .and(warp::path("notes"))
+        .and_then(get_user_notes);
+
+    create_user_route.or(get_user_route).or(patch_user_route).or(get_user_notes_route)
 }
 
 fn with_deps(deps: Dependencies) -> impl Filter<Extract = (Dependencies,), Error = std::convert::Infallible> + Clone {
@@ -193,4 +201,28 @@ async fn update_note(deps: Dependencies, id: String, new_content: bson::Document
         Ok(_) => Ok(warp::reply::json(&"200 OK".to_string())),
         Err(error) => Ok(warp::reply::json(&error.to_string()))
     }
+}
+
+async fn get_user_notes(deps: Dependencies, user_id: String) -> Result<impl Reply, Rejection> {
+    let object_id: ObjectId;
+    match ObjectId::parse_str(user_id) {
+        Ok(value) => object_id = value,
+        Err(_) => return Err(warp::reject::reject())
+    };
+    
+    let result = 
+        deps.database.query_documents(&deps.notes_collection, "owner_id".to_string(), object_id).await;
+
+    let docs: Vec<bson::Document>;
+    match result {
+        Ok(value) => docs = value,
+        Err(error) => return Ok(warp::reply::json(&error.to_string()))
+    }
+
+    let mut json_array = bson::Array::new();
+    for document in docs {
+        json_array.push(bson::Bson::Document(document));
+    }
+
+    Ok(warp::reply::json(&json_array))
 }

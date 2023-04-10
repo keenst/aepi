@@ -1,10 +1,10 @@
 use mongodb::{
-    bson::{Document, doc, self},
+    bson::{Document, doc, self, oid::ObjectId},
     error::Error,
     options::{ClientOptions, FindOptions, FindOneOptions, UpdateOptions},
     Client,
 };
-use futures::TryStreamExt;
+use futures::{TryStreamExt, StreamExt};
 
 #[derive(Clone)]
 pub struct Database {
@@ -63,5 +63,26 @@ impl Database {
 
         collection.update_one(filter, update, options).await?;
         Ok(())
+    }
+
+    pub async fn query_documents(
+        &self, 
+        collection: &mongodb::Collection<Document>, 
+        field: String, 
+        value: ObjectId) 
+    -> Result<Vec<Document>, Error> {
+        let filter = doc! { field: value };
+        let options = FindOptions::builder().build();
+        let mut cursor = collection.find(filter, options).await?;
+
+        let mut docs = vec![];
+        while let Some(result) = cursor.next().await {
+            match result {
+                Ok(document) => docs.push(document),
+                Err(error) => return Err(error)
+            }
+        }
+
+        Ok(docs)
     }
 }
