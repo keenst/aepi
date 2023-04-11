@@ -1,7 +1,7 @@
 mod db;
 
 use serde::{Deserialize, Serialize};
-use warp::{Filter, Reply, Rejection};
+use warp::{Filter, Reply, Rejection, reply::with_header};
 use mongodb::{error::Error, bson, bson::{doc, oid::ObjectId}, Collection};
 
 #[derive(Deserialize, Serialize)]
@@ -37,7 +37,10 @@ async fn main() -> Result<(), Error> {
 
     let routes = setup_user_routes(deps.clone())
         .or(setup_note_routes(deps.clone()))
-        .or(setup_auth_routes(deps.clone()));
+        .or(setup_auth_routes(deps.clone()))
+        .map(|reply| {
+            warp::reply::with_header(reply, "Access-Control-Allow-Origin", "*")
+        });
 
     warp::serve(routes).run(([127, 0, 0, 1], 1337)).await;
 
