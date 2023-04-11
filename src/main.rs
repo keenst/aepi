@@ -36,7 +36,8 @@ async fn main() -> Result<(), Error> {
     };
 
     let routes = setup_user_routes(deps.clone())
-        .or(setup_note_routes(deps.clone()));
+        .or(setup_note_routes(deps.clone()))
+        .or(setup_auth_routes(deps.clone()));
 
     warp::serve(routes).run(([127, 0, 0, 1], 1337)).await;
 
@@ -101,6 +102,18 @@ fn setup_user_routes(deps: Dependencies) -> impl Filter<Extract = impl warp::Rep
     create_user_route.or(get_user_route).or(patch_user_route).or(get_user_notes_route)
 }
 
+fn setup_auth_routes(deps: Dependencies) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    let auth_route = warp::path("auth");
+
+    let auth_route = warp::post()
+        .and(auth_route.clone())
+        .and(with_deps(deps.clone()))
+        .and(warp::body::json())
+        .and_then(get_user_id);
+
+    auth_route
+}
+
 fn with_deps(deps: Dependencies) -> impl Filter<Extract = (Dependencies,), Error = std::convert::Infallible> + Clone {
     warp::any().map(move || deps.clone())
 }
@@ -152,6 +165,23 @@ async fn update_user(deps: Dependencies, id: String, new_content: bson::Document
         Ok(_) => Ok(warp::reply::json(&"200 OK".to_string())),
         Err(error) => Ok(warp::reply::json(&error.to_string()))
     }
+}
+
+async fn get_user_id(deps: Dependencies, credentials: User) -> Result<impl Reply, Rejection> {    
+    let filter = doc! {
+        "username": credentials.username,
+        "password": credentials.password
+    };
+
+    let result = deps.database.query_documents(&deps.users_collection, filter).await;
+
+    let user_doc: bson::Document;
+    match result {
+        Ok(value) => user_doc = value[0].clone(),
+        Err(_) => return Err(warp::reject::reject())
+    };
+
+    Ok(warp::reply::json(&user_doc))
 }
 
 async fn get_note(deps: Dependencies, id: String) -> Result<impl Reply, Rejection> {
@@ -209,9 +239,12 @@ async fn get_user_notes(deps: Dependencies, user_id: String) -> Result<impl Repl
         Ok(value) => object_id = value,
         Err(_) => return Err(warp::reject::reject())
     };
-    
-    let result = 
-        deps.database.query_documents(&deps.notes_collection, "owner_id".to_string(), object_id).await;
+
+    let filter = doc! {
+        "owner_id": object_id
+    };
+
+    let result = deps.database.query_documents(&deps.notes_collection, filter).await;
 
     let docs: Vec<bson::Document>;
     match result {

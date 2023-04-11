@@ -68,10 +68,8 @@ impl Database {
     pub async fn query_documents(
         &self, 
         collection: &mongodb::Collection<Document>, 
-        field: String, 
-        value: ObjectId) 
+        filter: Document) 
     -> Result<Vec<Document>, Error> {
-        let filter = doc! { field: value };
         let options = FindOptions::builder().build();
         let mut cursor = collection.find(filter, options).await?;
 
