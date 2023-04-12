@@ -36,7 +36,7 @@ async fn main() -> Result<(), Error> {
     };
 
     let cors = warp::cors()
-        .allow_methods(vec!["GET", "POST", "PUT", "DELETE"])
+        .allow_methods(vec!["GET", "POST", "PUT", "DELETE", "PATCH"])
         .allow_headers(vec![header::AUTHORIZATION, header::CONTENT_TYPE])
         .build();
 
