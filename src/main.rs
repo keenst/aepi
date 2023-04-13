@@ -12,7 +12,6 @@ struct User {
 
 #[derive(Deserialize, Serialize)]
 struct Note {
-    content: bson::Document,
     owner_id: bson::oid::ObjectId
 }
 
@@ -215,7 +214,7 @@ async fn get_note(deps: Dependencies, id: String) -> Result<impl Reply, Rejectio
 
 async fn create_note(deps: Dependencies, note: Note) -> Result<impl Reply, Rejection> {
     let document = doc! {
-        "content": note.content,
+        "content": [{ "value": "", "indentation": 0 }],
         "owner_id": note.owner_id
     };
 
